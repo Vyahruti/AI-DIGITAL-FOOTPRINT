@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node (for React)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React Build
+frontend/build/
+frontend/dist/
+
+# MongoDB
+*.mongodb
+
+# Model Files (too large for git)
+backend/models/trained_models/*.pkl
+backend/models/trained_models/*.joblib
+*.h5
+*.pb
+
+# spaCy Models
+backend/nlp/models/
+
+# Logs
+*.log
+logs/
+
+# Test Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# Database
+*.db
+*.sqlite3
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+
+# OS
+Thumbs.db
