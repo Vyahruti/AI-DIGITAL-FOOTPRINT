@@ -2,7 +2,7 @@
 API Routes - Analysis Endpoints
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from typing import Optional
 import time
@@ -31,11 +31,13 @@ from app.models.schemas import (
     LinkedInAnalysisResult,
     GitHubAnalyzeRequest,
     GitHubAnalysisResult,
+    UserInDB,
 )
 from app.nlp import nlp_service
 from app.ml import ml_service
 from app.llm import llm_service
 from app import scraper
+from app.core.dependencies import get_current_user
 from app.db import (
     get_database, use_memory_storage, 
     memory_insert_one, memory_find_one, memory_find, 
@@ -111,7 +113,10 @@ TRAINING_CHALLENGES = {
 
 
 @router.post("/analyze-text", response_model=AnalysisResult)
-async def analyze_text(request: AnalyzeTextRequest):
+async def analyze_text(
+    request: AnalyzeTextRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """
     Analyze text for privacy risks
     
@@ -120,6 +125,8 @@ async def analyze_text(request: AnalyzeTextRequest):
     2. ML - Calculate risk score
     3. LLM - Generate recommendations (optional)
     4. Save to database
+    
+    **Requires authentication**
     """
     start_time = time.time()
     
@@ -162,10 +169,10 @@ async def analyze_text(request: AnalyzeTextRequest):
         # Generate analysis ID
         analysis_id = str(ObjectId())
         
-        # Step 5: Save to database or memory
+        # Step 5: Save to database or memory (use authenticated user_id)
         analysis_doc = {
             "_id": ObjectId(analysis_id),
-            "user_id": request.user_id,
+            "user_id": current_user.user_id,
             "input_text": request.text,
             "pii_entities": [e.dict() for e in pii_entities],
             "features": features.dict(),
@@ -327,8 +334,15 @@ async def score_training_attempt(payload: TrainingAttemptRequest):
 
 
 @router.get("/risk-report/{analysis_id}", response_model=AnalysisResult)
-async def get_risk_report(analysis_id: str):
-    """Get detailed risk report by analysis ID"""
+async def get_risk_report(
+    analysis_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """
+    Get detailed risk report by analysis ID
+    
+    **Requires authentication** - Can only access your own analyses
+    """
     try:
         # Fetch from database or memory
         if use_memory_storage():
@@ -341,6 +355,13 @@ async def get_risk_report(analysis_id: str):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Analysis {analysis_id} not found"
+            )
+        
+        # Verify ownership
+        if result.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to access this analysis"
             )
         
         # Convert to response model
@@ -366,8 +387,15 @@ async def get_risk_report(analysis_id: str):
 
 
 @router.get("/export-pdf/{analysis_id}")
-async def export_pdf_report(analysis_id: str):
-    """Export analysis report as PDF"""
+async def export_pdf_report(
+    analysis_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """
+    Export analysis report as PDF
+    
+    **Requires authentication** - Can only export your own analyses
+    """
     try:
         # Fetch from database or memory
         if use_memory_storage():
@@ -380,6 +408,13 @@ async def export_pdf_report(analysis_id: str):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Analysis {analysis_id} not found"
+            )
+        
+        # Verify ownership
+        if result.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to export this analysis"
             )
         
         # Convert ObjectId to string for PDF generation
@@ -418,13 +453,18 @@ async def export_pdf_report(analysis_id: str):
 
 
 @router.get("/history", response_model=HistoryResponse)
-async def get_history(user_id: Optional[str] = None, limit: int = 50):
-    """Get analysis history"""
+async def get_history(
+    current_user: UserInDB = Depends(get_current_user),
+    limit: int = 50
+):
+    """
+    Get analysis history for authenticated user
+    
+    **Requires authentication** - Returns only the current user's analysis history
+    """
     try:
-        # Build query
-        query = {}
-        if user_id:
-            query["user_id"] = user_id
+        # Build query using authenticated user's ID
+        query = {"user_id": current_user.user_id}
         
         # Fetch results from database or memory
         if use_memory_storage():
@@ -559,25 +599,43 @@ async def get_stats():
 
 
 @router.delete("/analysis/{analysis_id}")
-async def delete_analysis(analysis_id: str):
-    """Delete an analysis"""
+async def delete_analysis(
+    analysis_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """
+    Delete an analysis
+    
+    **Requires authentication** - Can only delete your own analyses
+    """
     try:
+        # First, verify ownership
         if use_memory_storage():
-            deleted_count = await memory_delete_one("analysis_results", {"_id": ObjectId(analysis_id)})
-            if deleted_count == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Analysis {analysis_id} not found"
-                )
+            result = await memory_find_one("analysis_results", {"_id": ObjectId(analysis_id)})
         else:
             db = get_database()
-            result = await db.analysis_results.delete_one({"_id": ObjectId(analysis_id)})
-            
-            if result.deleted_count == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Analysis {analysis_id} not found"
-                )
+            result = await db.analysis_results.find_one({"_id": ObjectId(analysis_id)})
+        
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Analysis {analysis_id} not found"
+            )
+        
+        # Verify ownership
+        if result.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this analysis"
+            )
+        
+        # Now delete
+        if use_memory_storage():
+            deleted_count = await memory_delete_one("analysis_results", {"_id": ObjectId(analysis_id)})
+        else:
+            db = get_database()
+            delete_result = await db.analysis_results.delete_one({"_id": ObjectId(analysis_id)})
+            deleted_count = delete_result.deleted_count
         
         return {"message": "Analysis deleted successfully"}
         

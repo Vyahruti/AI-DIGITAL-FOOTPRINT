@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Shield, Home, FileSearch, History, MessageCircleQuestion, Target, Github, Bot, Moon, Sun } from 'lucide-react'
+import { Shield, Home, FileSearch, History, MessageCircleQuestion, Target, Github, Bot, Moon, Sun, LogOut, User } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
 
 const Layout = ({ children }) => {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
+  const { user, isAuthenticated, logout } = useAuth()
   
   const isActive = (path) => {
     return location.pathname === path
@@ -49,6 +51,39 @@ const Layout = ({ children }) => {
                   <Moon className="w-5 h-5" />
                 )}
               </button>
+              
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm font-medium">{user?.email || 'User'}</span>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    aria-label="Logout"
+                    title="Logout"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-slate-200 dark:border-slate-700">
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -9,13 +9,43 @@ const api = axios.create({
   },
 })
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Add response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - clear auth and redirect to login
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      // Only redirect if not already on auth pages
+      if (!window.location.pathname.match(/\/(login|register)/)) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // API functions
 export const analyzeText = async (text, options = {}) => {
   const response = await api.post('/analyze-text', {
     text,
     include_recommendations: options.includeRecommendations ?? true,
     include_rewrite: options.includeRewrite ?? true,
-    user_id: options.userId,
   })
   return response.data
 }
@@ -25,9 +55,8 @@ export const getRiskReport = async (analysisId) => {
   return response.data
 }
 
-export const getHistory = async (userId = null, limit = 50) => {
+export const getHistory = async (limit = 50) => {
   const params = new URLSearchParams()
-  if (userId) params.append('user_id', userId)
   params.append('limit', limit)
   
   const response = await api.get(`/history?${params.toString()}`)

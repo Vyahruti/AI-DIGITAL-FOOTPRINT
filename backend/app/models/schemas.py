@@ -286,6 +286,51 @@ class GitHubAnalysisResult(BaseModel):
     privacy_score: GitHubPrivacyScore = Field(..., description="Overall privacy risk")
     recommendations: List[str] = Field(default=[], description="Privacy recommendations")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    recommendations: List[str] = Field(default=[], description="Privacy recommendations")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============ Authentication Schemas ============
+
+class UserRegistrationRequest(BaseModel):
+    """Request model for user registration"""
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=8, max_length=100, description="Password (min 8 characters)")
+    full_name: Optional[str] = Field(default=None, max_length=100, description="User's full name")
+
+
+class UserLoginRequest(BaseModel):
+    """Request model for user login"""
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., description="User password")
+
+
+class UserResponse(BaseModel):
+    """User information response"""
+    user_id: str = Field(..., description="Unique user ID")
+    email: str = Field(..., description="User email")
+    full_name: Optional[str] = Field(default=None, description="User's full name")
+    created_at: datetime = Field(..., description="Account creation timestamp")
+    is_active: bool = Field(default=True, description="Account active status")
+
+
+class TokenResponse(BaseModel):
+    """JWT token response"""
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    user: UserResponse = Field(..., description="User information")
+
+
+class TokenData(BaseModel):
+    """Data encoded in JWT token"""
+    user_id: str
+    email: str
+
+
+class UserInDB(BaseModel):
+    """User model as stored in database"""
+    user_id: str
+    email: str
+    hashed_password: str
+    full_name: Optional[str] = None
+    created_at: datetime
+    is_active: bool = True
 

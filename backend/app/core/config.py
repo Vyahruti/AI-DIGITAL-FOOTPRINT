@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "Hybrid AI system for privacy risk detection"
     API_V1_STR: str = "/api"
     
+    # Security
+    SECRET_KEY: str = "your-secret-key-change-this-in-production-min-32-chars"
+    
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
