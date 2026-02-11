@@ -11,12 +11,14 @@ import uvicorn
 from app.core.config import settings
 from app.api import api_router
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
+from app.llm import llm_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events"""
     # Startup
+    llm_service.init_llm() # Initialize LLM service
     await connect_to_mongo()
     print("✅ Connected to MongoDB")
     print(f"🚀 Server running on http://{settings.HOST}:{settings.PORT}")
@@ -48,6 +50,7 @@ app.add_middleware(
 )
 
 # Include API routes
+app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix="/api")
 
 

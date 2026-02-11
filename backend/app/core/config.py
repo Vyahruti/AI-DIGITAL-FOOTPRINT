@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Privacy Footprint Analyzer"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "Hybrid AI system for privacy risk detection"
+    API_V1_STR: str = "/api"
     
     # Server
     HOST: str = "0.0.0.0"
@@ -24,8 +25,10 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "http://127.0.0.1:5173"
     ]
     
@@ -38,6 +41,13 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-3.5-turbo"
     OPENAI_TEMPERATURE: float = 0.7
     OPENAI_MAX_TOKENS: int = 500
+
+    # Gemini API (for privacy assistant)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash-latest"
+    
+    # GitHub API (for profile scanning)
+    GITHUB_TOKEN: str = ""
     
     # LangChain
     LANGCHAIN_TRACING_V2: bool = False
@@ -99,3 +109,9 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
+
+# --- Debug: Print loaded API keys ---
+print("--- Loading .env settings ---")
+print(f"OpenAI Key loaded: {'Yes' if settings.OPENAI_API_KEY else 'No'}")
+print(f"Gemini Key loaded: {'Yes' if settings.GEMINI_API_KEY else 'No'}")
+print("-----------------------------")

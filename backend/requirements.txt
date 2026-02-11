@@ -25,6 +25,7 @@ openai==1.10.0
 langchain==0.1.5
 langchain-openai==0.0.5
 langchain-community==0.0.16
+google-generativeai
 
 # Database - MongoDB
 pymongo==4.6.1
@@ -46,6 +47,10 @@ email-validator==2.1.0
 # HTTP Requests
 httpx==0.26.0
 requests==2.31.0
+beautifulsoup4==4.12.3
+
+# PDF Generation
+reportlab==4.0.9
 
 # Testing
 pytest==7.4.4
